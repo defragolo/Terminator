@@ -8,6 +8,7 @@ Created on Mon Jan 29 15:35:11 2018
 import xlrd
 import pickle
 from xlwt import Workbook
+import datetime
 
 ###############################################################################
 ##################### Import of excel files in dictionnaries ##################
@@ -239,13 +240,12 @@ def supp_item():
 ################ Export of the triads list into an Excel file #################
 ###############################################################################
 
-def export(listeTriades): #create an Excel Sheet with the results
+def export(listeTriades, valAddInfo): #create an Excel Sheet with the results & the additional informations
     #print (listeTriades)
     # creation of the workbook
+    addInfo = ['REF_N°:','SPECIES_N°','REC_N°:','Genus:','Specie name:','Population:','Sex:','Stage:','Locality:','Host:']
     book = Workbook()
-    #listeTriades = []
-    #listeTriades.append(['organe1','propriété1','valeur1'])
-    #listeTriades.append(['organe2', 'prop2','val2'])
+    
     # creation of the first sheet
     sheet1 = book.add_sheet('Results')
     
@@ -253,19 +253,28 @@ def export(listeTriades): #create an Excel Sheet with the results
     sheet1.write(0,0,'Organ')
     sheet1.write(0,1,'Property')
     sheet1.write(0,2,'Value')
+     
+    #adding the reference column
+    for i in range(len(addInfo)):
+        #Bold text, it does not work : sheet1.write(i,4,'\033[1m' + addInfo[i])
+        sheet1.write(i, 5, addInfo[i])
+        sheet1.write(i, 6, valAddInfo[i])
+        #k+=1
     
+    #sheet1.write(0,4, addInfo[0])
     x = 1
     #filling the table
     for triades in listeTriades: #pour les triades de chaque phrase
         for triade in triades: #pour chaque triade
-            print(triade)
             sheet1.write(x,0,triade[0])
             sheet1.write(x,1,triade[1])
             sheet1.write(x,2,triade[2])
             x += 1 # allow to right in the line below the previous one
     
     # material creation of the existing file
-    book.save('FinalResults.xls')
+    D=datetime.datetime.today()
+    X=D.strftime('%d_%m_%Y-%H_%M_%S')
+    book.save('TerminatorResults-' + X + '.xls')
     
 ###############################################################################
 ###############################################################################

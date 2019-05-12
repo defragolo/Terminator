@@ -9,6 +9,9 @@ import sys
 import os
 import csv
 import datetime
+import tkinter as tk
+from tkinter.filedialog import askopenfilename
+from io import open
 #import Main1103
 from MyTable import Mytable
 from fonctions_terminator import pseudo_main
@@ -20,11 +23,113 @@ class Ui_MainWindow(object):
     app = QtWidgets.QApplication(sys.argv)
     
     listBuffer=[]
+    additionalInfos=[]
     
+    
+    def add_Item(self):
+        print("Adding a new word in the dictionnary : \n")
+        ajoute = False
+        word = input("What word do you want to add to the dictionnary ? \n")
+        word = word.lower() # word in lower case
+        
+    
+        ######################## DICTIONNARY'S CHOICE ########################
+    
+        print("In which dictionnary ? \n")
+        print("1) Organs/Synonyms dictionnary \n")
+        print("2) Properties/Values dictionnary \n")
+        print("3) Name extensions dictionnary \n")
+        
+        c = input("Your choice ? 1,2 or 3 ? \n")
+        if c == '1': 
+            file = 'organsList' # define the file we are working in
+            dico = open('organsList') # load the dictionnary
+            print("You chose Organs/Synonyms dictionnary. \n")
+        elif c == '2': 
+            file = 'valuesDico' # define the file we are working in
+            dico = open('valuesDico') # load the dictionnary
+            print("You chose Properties/Values dictionnary. \n")
+        elif c == '3': 
+            dico = open('relativeProp') # define the file we are working in
+            file = 'relativeProp' # load the dictionnary
+            print("You chose Name extensions dictionnary. \n")
+        else: # if the user enters something else
+            print("Error")
+            
+        ####################################################################
+        
+        syno = input("Is this word the synonym for another one ? y/n \n")
+        
+        if syno == 'y' or syno == 'Y': # if the word is synonym of another one
+            newsyno = input("Which one ? \n")
+            newsyno = newsyno.lower() # new synonym in lower case
+            
+            for key in dico: # look in the entire dictionnary
+                if newsyno in dico.keys(): # if newsyno is a key in the dictionnary
+                    dico[newsyno].append(word) # add word in the values of the newsyno key
+                    with open(file,'wb') as newdico: # open the file containing the dico (with 'write' argument)
+                        pickle.dump(dico,newdico) # modify the file containing the dico
+                        newdico.close() # close the file
+                    print("The word is now in the dictionnary. \n")
+                    ajoute = True
+                    break # exit the loop
+                else: # if newsyno is not a key in the dictionnary
+                    for i in dico.values(): # we look in the values of the dictionnary
+                        if newsyno in i: # if newsyno is in the values of the dictionnary
+                            i.append(word) # we add it in the list of the corresponding values
+                            with open(file,'wb') as newdico: # open the file containing the dico (with 'write' argument)
+                                pickle.dump(dico,newdico) # modify and save the file
+                                newdico.close() # close the file 
+                            print("The word is now in the dictionnary. \n")
+                            ajoute = True
+                    break # exit the loop
+            if ajoute == False: 
+                print("This word is not in the dictionnary. \n")
+        
+        elif syno == 'n' or syno == 'N': # if word is not a synonym of another word
+            dico[word] = [] # add the word as a key in the dictionnary
+            with open(file,'wb') as newdico: # open the file containing the dico (with 'write' argument)
+                pickle.dump(dico,newdico) # modify and save the file
+                newdico.close() # close the file
+                print("The word is now in the dictionnary. \n")
+                ajoute = True
+            if ajoute == False: 
+                print("This word is not in the dictionnary. \n")
+        else: # if the user enters something else
+            print("Error")
+
+      # import a file in the interface  
+    def import_Fichier (self,f):  
+       # on crée la liste des fichiers
+        root = tk.Tk()
+        root.withdraw()             # pour ne pas afficher la fenêtre Tk
+        filepath = askopenfilename(filetypes=[('txt files','.txt')])   # lance la fenêtre
+        print (filepath) 
+       #ouverture du fichier test.txt en mode read 'r' (lecture en mode texte)
+        name = open(filepath, "r") 
+        f = name.readlines() 
+        #print (f)
+        str1 = ''.join(f)
+        self.textEditPublishedDescription.append(str1)
+
+    # Export in the directory a file "TerminatorResults-date-hour.xlsx"
     def exportExcel(self):
         self.labelErrorExecute.setText("")
+        self. additionalInfos.append(self.lineEditRefNum.text())
+        self.additionalInfos.append(self.lineEditSpeciesNum.text())
+        self.additionalInfos.append(self.lineEditRecNum.text())
+        self.additionalInfos.append(self.lineEditGenus.text())
+        self.additionalInfos.append(self.lineEditSpecies.text())
+        self.additionalInfos.append(self.lineEditPopulation.text())
+        self.additionalInfos.append(self.lineEditStage.text())
+        self.additionalInfos.append(self.lineEditSex.text())
+        self.additionalInfos.append(self.lineEditLocality.text())
+        self.additionalInfos.append(self.lineEditHost.text())
+        
         try:
-            export(self.triads) #mauvaise forme de tableau
+            export(self.triads, self.additionalInfos) #mauvaise forme de tableau
+            self.labelErrorExecute.setText("Export successful")
+            
         except:
             print("Fail creation")
             self.labelErrorExecute.setText("Fail creation")
@@ -36,78 +141,6 @@ class Ui_MainWindow(object):
         #cell value can't be empty because else their value can be changed even when validated checkbox is checked
         self.tableViewResultExecute.setValue1(self.tableViewResultExecute.rowCount()-1,"none","none","none","none")
 
-
-            ###Saving method 
-    def creationFichier (self):
-        D=datetime.datetime.today()
-        X=D.strftime('%Y_%m_%d-%H_%M_%S')
-        nomFichier="Terminator_" + X + ".txt"
-        obj = open(nomFichier, 'w') ## Opening the file in writting
-       ## adding of label informations in the file
-        obj.write("                             TERMINATOR                          ")
-        obj.write("\n\n\n")
-        obj.write(X)
-        obj.write("\n\n\n")
-        obj.write("Ref N°:")
-        obj.write(self.lineEditRefNum.text())
-        obj.write("\n\n")
-        obj.write("Specie Number:")
-        obj.write(self.lineEditSpeciesNum.text())
-        obj.write("\n\n")
-        obj.write("Rec N°:")
-        obj.write(self.labelRecNum.text())
-        obj.write("\n\n")
-        obj.write("Genus:")
-        obj.write(self.lineEditGenus.text())
-        obj.write("\n\n")
-        obj.write("Specie Name:")
-        obj.write(self.lineEditSpecies.text())
-        obj.write("\n\n")
-        obj.write("Population:")
-        obj.write(self.lineEditPopulation.text())
-        obj.write("\n\n")
-        obj.write("Stage:")
-        obj.write(self.lineEditStage.text())
-        obj.write("\n\n")
-        obj.write("Sex:")
-        obj.write(self.lineEditSex.text())
-        obj.write("\n\n")
-        obj.write("Locality:")
-        obj.write(self.lineEditLocality.text())
-        obj.write("\n\n")
-        obj.write("Host:")
-        obj.write(self.lineEditHost.text())
-        obj.write("\n\n\n")
-        obj.write("Raw text entered:")
-        obj.write("\n\n")
-        obj.write(self.textEditPublishedDescription.toPlainText()) ## Adding  of the original text into the file
-        ## adding of the triads
-        obj.write("\n\n\n")
-        obj.write("Triades Generated:")
-        obj.write("\n\n\n")
-        
-        espace = 60
-        #for each line in the Result table
-        for i in range(self.tableViewResultExecute.rowCount()):
-            
-            triad=[] # the array is initialised for each line
-            triad.append("           ")
-            triad.append( self.tableViewResultExecute.item(i,0).text()) #the organ is written 
-            wordLength = len(self.tableViewResultExecute.item(i,0).text()) - 1
-            
-            for z in range (espace-wordLength):# the necessary number of " " is added for the alignment
-                triad.append(" ")
-            
-            triad.append(self.tableViewResultExecute.item(i,1).text())            
-            wordLength = len(self.tableViewResultExecute.item(i,1).text()) - 1        
-            for e in range (espace-wordLength):
-                triad.append(" ")
-            triad.append(self.tableViewResultExecute.item(i,2).text())#the value is written
-            
-            stringTampon="".join(triad) #concatenation of the table to obtain a String
-            obj.write(stringTampon) #the String is written in the file
-            obj.write("\n")
-        obj.close()
 
 ################################################################################
    ###########################################################
@@ -126,25 +159,13 @@ class Ui_MainWindow(object):
         self.tableViewResultExecute.setValue1((i-1),organ,properti,value)
         self.tableViewResultExecute.update()
         del self.listBuffer[-1]
-    
 
-    #deletes the row of the selected cell
+    #deletes all the selected rows
     def deleteTriad(self):
-        buffer = []
-        self.labelErrorExecute.setText("")
-        #if an item is selected
-        if(self.tableViewResultExecute.currentItem() != None):
-            buffer.append(self.tableViewResultExecute.item(self.tableViewResultExecute.row(self.tableViewResultExecute.currentItem()),0).text())
-            print("Buffer après premier ajout : "+buffer[0])
-            buffer.append(self.tableViewResultExecute.item(self.tableViewResultExecute.row(self.tableViewResultExecute.currentItem()),1).text())
-            print("Buffer après second ajout : "+buffer[1])
-            buffer.append(self.tableViewResultExecute.item(self.tableViewResultExecute.row(self.tableViewResultExecute.currentItem()),2).text())
-            print("Buffer après troisieme ajout : "+buffer[2])
-            self.listBuffer.append(buffer)
-            print("liste buffer après ajout")
-            print(self.listBuffer)
-            self.tableViewResultExecute.deleteLine(self.tableViewResultExecute.row((self.tableViewResultExecute.currentItem())));
-        else: self.labelErrorExecute.setText("No selected item")
+        deletion = self.tableViewResultExecute.deleteLines()
+        if(not(deletion)):
+            self.labelErrorExecute.setText("No selected line")
+   
         
    #############################################
    # méthode bouton next ok 
@@ -200,11 +221,11 @@ class Ui_MainWindow(object):
         self.textEditPublishedDescriptionExecutePage.setText(self.findCurrentSentence())
         self.displayCurrentTriads()
         #disables the buttons Previous and Next when needed
-        if(self.currentSentence == len(self.sentences)-1):
-            self.pushButtonNextExecute.setEnabled(False)
         if(self.currentSentence != 0):
             self.pushButtonPreviousExecute.setEnabled(True)
-
+        if(self.currentSentence == len(self.sentences)-1):
+            self.pushButtonNextExecute.setEnabled(False)
+        
 
     #when the user clicks on the Previous button in Execute, the previous triad appears
     def buttonPreviousExecute(self):
@@ -284,8 +305,7 @@ class Ui_MainWindow(object):
         
         self.layoutImportText3 = QtWidgets.QFormLayout()
         self.layoutImportText3.setObjectName("layoutImportText3")
-        self.labelRefNum = QtWidgets.QLabel(self.importText_page)
-        
+        self.labelRefNum = QtWidgets.QLabel(self.importText_page)       
 
         ##ref num
         self.labelRefNum.setObjectName("labelRefNum")
@@ -293,7 +313,7 @@ class Ui_MainWindow(object):
         self.lineEditRefNum = QtWidgets.QLineEdit(self.importText_page)
         self.lineEditRefNum.setObjectName("lineEditRefNum")
         self.layoutImportText3.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.lineEditRefNum)
-       
+     
         ## specie num
         self.labelSpeciesNum = QtWidgets.QLabel(self.importText_page)
         self.labelSpeciesNum.setObjectName("labelSpeciesNum")
@@ -382,24 +402,19 @@ class Ui_MainWindow(object):
         spacerItem1 = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.layoutDescription.addItem(spacerItem1)
         
-        
         self.textEditPublishedDescription = QtWidgets.QTextEdit(self.importText_page)
         self.textEditPublishedDescription.setObjectName("textEditPublishedDescription")
         self.layoutDescription.addWidget(self.textEditPublishedDescription)
         
         ##bouton next et import file:
-        
         self.layoutImportFileAndnextButtons = QtWidgets.QHBoxLayout()
         self.layoutImportFileAndnextButtons.setObjectName("layoutImportFileAndnextButtons")
         
         #import file bouton
         self.pushButtonImportFile = QtWidgets.QPushButton(self.importText_page)
         self.pushButtonImportFile.setObjectName("pushButtonImportFile")
-        
-        
-        
+        self.pushButtonImportFile.clicked.connect(self.import_Fichier)        
         self.layoutImportFileAndnextButtons.addWidget(self.pushButtonImportFile)
-        
         
         #Next button
         self.pushButtonNext = QtWidgets.QPushButton(self.importText_page)
@@ -411,8 +426,6 @@ class Ui_MainWindow(object):
         self.labelEmptyField = QtWidgets.QLabel(self.importText_page)
         self.labelEmptyField.setObjectName("labelEmptyField")
         self.layoutImportText2.setWidget(30, QtWidgets.QFormLayout.LabelRole, self.labelEmptyField)
-
-
         self.layoutDescription.addLayout(self.layoutImportFileAndnextButtons)
         self.layoutImportText2.setLayout(2, QtWidgets.QFormLayout.SpanningRole, self.layoutDescription)
         self.layoutImportText1.addLayout(self.layoutImportText2)
@@ -458,33 +471,33 @@ class Ui_MainWindow(object):
         
         ###########################
         # table of results
-        self.tableViewResultExecute = Mytable(0,5)#QtWidgets.QTableView(self.groupBoxExecute2)
-        colonne_header=["Organ","Property","Value","Modifier","Validated"]#,"Validated:"
+        self.tableViewResultExecute = Mytable(0,6)#QtWidgets.QTableView(self.groupBoxExecute2)
+        colonne_header=["Selection","Organ","Property","Value","Modifyer","Validated"]#,"Validated:"
         self.tableViewResultExecute.setHorizontalHeaderLabels(colonne_header)
         header= self.tableViewResultExecute.horizontalHeader()
         header.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableViewResultExecute.setObjectName("tableViewResultExecute")
         self.layoutExecute4.addWidget(self.tableViewResultExecute)
-        self.tableViewResultExecute.setFocusPolicy(QtCore.Qt.NoFocus)   
+        self.tableViewResultExecute.setFocusPolicy(QtCore.Qt.NoFocus)
         
         
-       #############################
+        #############################
         self.layoutExecute5 = QtWidgets.QHBoxLayout()
         self.layoutExecute5.setObjectName("layoutExecute5")
         
-            ################################
+        ################################
         # button delete
         ################################
         self.pushButtonDelete=QtWidgets.QPushButton(self.groupBoxExecute2)
-        self.pushButtonDelete.setText("Delete Triad")
+        self.pushButtonDelete.setText("Delete Triads")
         
         self.pushButtonDelete.setObjectName("pushButtonDelete")
         self.pushButtonDelete.clicked.connect(self.deleteTriad)
         
-#        
+        #        
         #############################
         
-               ################################
+        ################################
         # button add
         ################################
         self.pushButtonAdd=QtWidgets.QPushButton(self.groupBoxExecute2)
@@ -493,9 +506,7 @@ class Ui_MainWindow(object):
         self.pushButtonAdd.setObjectName("pushButtonAdd")
         self.pushButtonAdd.clicked.connect(self.addTriad)
         self.layoutExecute5.addWidget(self.pushButtonAdd)
-        self.layoutExecute5.addWidget(self.pushButtonDelete)
-
-#        
+        self.layoutExecute5.addWidget(self.pushButtonDelete)        
         
         ## bouton save a job
         self.pushButtonSaveAJobExecute = QtWidgets.QPushButton(self.groupBoxExecute2)
@@ -504,7 +515,7 @@ class Ui_MainWindow(object):
         
         #Previous button in Execute
         self.pushButtonPreviousExecute = QtWidgets.QPushButton(self.groupBoxExecute2)
-        self.pushButtonPreviousExecute.setObjectName("pushButtonNextExecute")
+        self.pushButtonPreviousExecute.setObjectName("pushButtonPreviousExecute")
         self.layoutExecute5.addWidget(self.pushButtonPreviousExecute)
         self.layoutExecute4.addLayout(self.layoutExecute5)
         self.pushButtonPreviousExecute.setEnabled(False)
@@ -515,6 +526,7 @@ class Ui_MainWindow(object):
         self.pushButtonNextExecute.setObjectName("pushButtonNextExecute")
         self.layoutExecute5.addWidget(self.pushButtonNextExecute)
         self.layoutExecute4.addLayout(self.layoutExecute5)
+        self.pushButtonPreviousExecute.setEnabled(True)
         self.pushButtonNextExecute.clicked.connect(self.buttonNextExecute)
         
         #button export
@@ -528,7 +540,6 @@ class Ui_MainWindow(object):
         self.labelErrorExecute = QtWidgets.QLabel(self.groupBoxExecute2)
         self.labelErrorExecute.setObjectName("labelErrorExecute")
         self.layoutExecute4.addWidget(self.labelErrorExecute)
-        
         
         
         self.horizontalLayout_14.addLayout(self.layoutExecute4)
@@ -560,6 +571,8 @@ class Ui_MainWindow(object):
         self.pushButtonAddSchema = QtWidgets.QPushButton(self.groupBoxSchema1)
         self.pushButtonAddSchema.setObjectName("pushButtonAddSchema")
         self.layoutSchema3.addWidget(self.pushButtonAddSchema)
+        self.pushButtonAddSchema.clicked.connect(self.add_Item)
+        
         
         ##bouton modify schema
         self.pushButtoModifySchema = QtWidgets.QPushButton(self.groupBoxSchema1)
@@ -577,30 +590,6 @@ class Ui_MainWindow(object):
         self.tab.addTab(self.schema_page, "")
         self.verticalLayout_17.addWidget(self.tab)
         
-        ## Partie export
-        self.export_page = QtWidgets.QWidget()
-        self.export_page.setObjectName("export_page")
-        self.verticalLayout_77 = QtWidgets.QVBoxLayout(self.export_page)
-        self.verticalLayout_77.setObjectName("verticalLayout_77")
-        self.layoutSchema11 = QtWidgets.QVBoxLayout()
-        self.layoutSchema11.setObjectName("layoutSchema11")
-        self.groupBoxSchema11 = QtWidgets.QGroupBox(self.export_page)
-        self.groupBoxSchema11.setObjectName("groupBoxSchema11")
-        self.horizontalLayout_166 = QtWidgets.QHBoxLayout(self.groupBoxSchema11)
-        self.horizontalLayout_166.setObjectName("horizontalLayout_166")
-        self.layoutSchema22 = QtWidgets.QVBoxLayout()
-        self.layoutSchema22.setObjectName("layoutSchema22")
-        self.tableViewSchema = QtWidgets.QTableView(self.groupBoxSchema11)
-        self.tableViewSchema.setObjectName("tableViewSchema")
-        self.layoutSchema22.addWidget(self.tableViewSchema)
-        self.layoutSchema33 = QtWidgets.QHBoxLayout()
-        self.layoutSchema33.setObjectName("layoutSchema33")
-        #
-        self.layoutSchema22.addLayout(self.layoutSchema33)
-        self.horizontalLayout_166.addLayout(self.layoutSchema22)
-        self.layoutSchema11.addWidget(self.groupBoxSchema11)
-        self.verticalLayout_77.addLayout(self.layoutSchema11)
-        self.tab.addTab(self.export_page, "")
         
         ## partie help
         self.help_page = QtWidgets.QWidget()
@@ -632,7 +621,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        self.labelHelp.setText(_translate("MainWindow", "To use this program:\n\n- Firstly, you must either enter a text or click on the button: \"Import File\" in order to import your text.\n- Then, after clicking on the button \"Next\", you will have the possibility to validate, add or even delete the Triads\nthat you found in this text using the buttons in the execute tab. The triads will be displayed sentence by sentence.\n- Finally, you could export your result in the same tab and show them in a file that will have \"FinalResults\" as a name."
+        self.labelHelp.setText(_translate("MainWindow", "To use this program:\n\n\n\n- Firstly, you must either enter a text or click on the button: \"Import File\" in order to import your text.\n\n- Then, after clicking on the button \"Next\", you will have the possibility to validate, add or even delete the Triads\nthat you found in this text using the buttons in the execute tab. The triads will be displayed sentence by sentence.\n\n- Finally, you could export your result in the same tab and show them in a file that will have \"FinalResults\" as a name."
         ""))
         #self.labelHelp.move(0, 0)        
         self.labelHome4.setPixmap(QtGui.QPixmap(_translate("MainWindow", 'nematode.png')))
@@ -690,10 +679,10 @@ class Ui_MainWindow(object):
         self.pushButtoModifySchema.setText(_translate("MainWindow", "Modify"))
         self.pushButtonDeleteSchema.setText(_translate("MainWindow", "Delete"))
         self.tab.setTabText(self.tab.indexOf(self.schema_page), _translate("MainWindow", "Schema"))
-        # partie export
-        self.tab.setTabText(self.tab.indexOf(self.export_page), _translate("MainWindow", "Export results"))
         # partie help
         self.tab.setTabText(self.tab.indexOf(self.help_page), _translate("MainWindow", "Help"))
+
+        
 
 if __name__ == "__main__":
     import sys
